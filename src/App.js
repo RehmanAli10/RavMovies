@@ -57,31 +57,40 @@ export default function App() {
   return (
     <>
       <NavBar>
+        <Logo />
         <Search />
         <FoundResults movies={movies} />
       </NavBar>
 
       <main className="main">
-        <SearchedMovies>
-          <SearchedMoviesList movie={movies} />
-        </SearchedMovies>
+        {/* Implicitly passing props in reuseable component Box (<Box/>) */}
 
-        <WatchedMovies>
-          <WatchedMoviesList watched={watched} />
+        {/* <Box element={<SearchedMoviesList movie={movies} />} />
+        <Box
+          element={
+            <>
+              <WatchedMoviesSummary watched={watched} />
+              <WatchedMoviesList watched={watched} />
+            </>
+          }
+        /> */}
+
+        {/* Explicitly passing props in reuseable component Box (<Box/>)  */}
+        <Box>
+          <SearchedMoviesList movie={movies} />
+        </Box>
+
+        <Box>
           <WatchedMoviesSummary watched={watched} />
-        </WatchedMovies>
+          <WatchedMoviesList watched={watched} />
+        </Box>
       </main>
     </>
   );
 }
 
 function NavBar({ children }) {
-  return (
-    <nav className="nav-bar">
-      <Logo />
-      {children}
-    </nav>
-  );
+  return <nav className="nav-bar">{children}</nav>;
 }
 
 function Logo() {
@@ -114,14 +123,14 @@ function FoundResults({ movies }) {
   );
 }
 
-function SearchedMovies({ children }) {
-  const [isOpen1, setIsOpen1] = useState(true);
+function Box({ children }) {
+  const [isOpen, setIsOpen] = useState(true);
   return (
     <div className="box">
-      <Button onClick={() => setIsOpen1((open) => !open)}>
-        {isOpen1 ? "–" : "+"}
+      <Button onClick={() => setIsOpen((open) => !open)}>
+        {isOpen ? "–" : "+"}
       </Button>
-      {isOpen1 && children}
+      {isOpen && children}
     </div>
   );
 }
@@ -148,19 +157,6 @@ function EachSearchedMovie({ movie }) {
         </p>
       </div>
     </li>
-  );
-}
-
-function WatchedMovies({ children }) {
-  const [isOpen2, setIsOpen2] = useState(true);
-
-  return (
-    <div className="box">
-      <Button onClick={() => setIsOpen2((open) => !open)}>
-        {isOpen2 ? "-" : "+"}
-      </Button>
-      {isOpen2 && <>{children}</>}
-    </div>
   );
 }
 
