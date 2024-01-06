@@ -1,52 +1,5 @@
 import { useEffect, useState } from "react";
 
-const tempMovieData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt0133093",
-    Title: "The Matrix",
-    Year: "1999",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt6751668",
-    Title: "Parasite",
-    Year: "2019",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
-  },
-];
-
-const tempWatchedData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-    runtime: 148,
-    imdbRating: 8.8,
-    userRating: 10,
-  },
-  {
-    imdbID: "tt0088763",
-    Title: "Back to the Future",
-    Year: "1985",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
-    runtime: 116,
-    imdbRating: 8.5,
-    userRating: 9,
-  },
-];
-
 // Api
 
 // http://www.omdbapi.com/?apikey=[yourkey]&
@@ -56,41 +9,69 @@ const average = (arr) =>
 const KEY = "cba947db";
 
 export default function App() {
-  // const [movies, setMovies] = useState(tempMovieData);
-  // const [watched, setWatched] = useState(tempWatchedData);
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
+  const [searchedMovie, setSearchedMovie] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(function () {
-    fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=leo `)
-      .then((res) => res.json())
-      .then((data) => setMovies(data.Search));
-  }, []);
+  function handleSearch(movie) {
+    setSearchedMovie(movie);
+  }
+
+  useEffect(
+    function () {
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${
+              searchedMovie ? searchedMovie : Search.Title
+            } `
+          );
+
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movies");
+
+          const data = await res.json();
+
+          if (data.Response === "FALSE") throw new Error("Movie not found");
+
+          if (data.Search) {
+            setMovies(() =>
+              data.Search.Title === searchedMovie
+                ? searchedMovie.split(" ")
+                : data.Search
+            );
+          } else {
+            setMovies([]);
+          }
+          setIsLoading(false);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      fetchMovies();
+    },
+    [searchedMovie]
+  );
 
   return (
     <>
       <NavBar>
         <Logo />
-        <Search />
+        <Search onSearch={handleSearch} />
         <FoundResults movies={movies} />
       </NavBar>
 
       <main className="main">
-        {/* Implicitly passing props in reuseable component Box (<Box/>) */}
-
-        {/* <Box element={<SearchedMoviesList movie={movies} />} />
-        <Box
-          element={
-            <>
-              <WatchedMoviesSummary watched={watched} />
-              <WatchedMoviesList watched={watched} />
-            </>
-          }
-        /> */}
-
-        {/* Explicitly passing props in reuseable component Box (<Box/>)  */}
         <Box>
-          <SearchedMoviesList movie={movies} />
+          {isLoading && <Loader />}
+          {!isLoading && !error && <SearchedMoviesList movie={movies} />}
+          {error && <ErrorMessage message={error} />}
         </Box>
 
         <Box>
@@ -115,20 +96,28 @@ function Logo() {
   );
 }
 
-function Search() {
+function Search({ onSearch }) {
   const [query, setQuery] = useState("");
+
+  function handleChange(e) {
+    const value = e.target.value;
+    setQuery(value);
+    onSearch(value);
+  }
+
   return (
     <input
       className="search"
       type="text"
       placeholder="Search movies..."
       value={query}
-      onChange={(e) => setQuery(e.target.value)}
+      onChange={handleChange}
     />
   );
 }
 
 function FoundResults({ movies }) {
+  console.log("found results", movies.length);
   return (
     <p className="num-results">
       Found <strong>{movies.length}</strong> results
@@ -240,5 +229,19 @@ function Button({ children, onClick }) {
     <button className="btn-toggle" onClick={onClick}>
       {children}
     </button>
+  );
+}
+
+// Loader
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+
+// Error
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>⚠</span> {message}
+    </p>
   );
 }
